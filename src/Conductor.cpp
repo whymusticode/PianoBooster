@@ -823,14 +823,22 @@ void CConductor::addDeltaTime(qint64 ticks)
 
 void CConductor::followPlaying()
 {
-    if ( m_playMode == PB_PLAY_MODE_listen )
-        return;
-
     if (m_wantedChord.length() == 0)
         fetchNextChord();
 
     if (m_wantedChord.length() == 0)
         return;
+
+    if ( m_playMode == PB_PLAY_MODE_listen )
+    {
+        // Nothing waits for the pianist here, but the wanted chords must still be taken off
+        // the queue once the music has passed them. Otherwise the queue fills up, CSong::task
+        // stops reading the MIDI file, and songs with more chords than the queue holds stop
+        // playing before the end.
+        while (m_wantedChord.length() > 0 && m_chordDeltaTime > m_cfg_playZoneLate)
+            fetchNextChord();
+        return;
+    }
 
     if (seekingBarNumber())
     {
