@@ -95,8 +95,12 @@ public:
 
     double getCurrentBarPos()
     {
-        return m_barCounter + static_cast<double>(m_beatCounter)/static_cast<double>(m_currentTimeSigBottom) +
-            static_cast<double>(m_deltaTime)/static_cast<double>(m_beatLength * m_currentTimeSigBottom * SPEED_ADJUST_FACTOR);
+        // The fraction of the bar is measured in beats of the *current* bar (the time sig
+        // numerator), not the denominator. Using the denominator made the position jump
+        // backwards at every bar line in time signatures such as 6/4 or 3/2.
+        const double beats = static_cast<double>(m_beatCounter) +
+            static_cast<double>(m_deltaTime)/static_cast<double>(m_beatLength * SPEED_ADJUST_FACTOR);
+        return m_barCounter + beats/static_cast<double>(m_currentTimeSigTop);
     }
 
     bool seekingBarNumber() { return m_seekingBarNumber;}
@@ -108,7 +112,9 @@ public:
         return bits;
     }
 
-    qint64 goToBarNumer();
+    // Advance towards the play-from bar, but never by more than maxTicks so the bar
+    // counter cannot run ahead of the MIDI events (e.g. skip a time signature change).
+    qint64 goToBarNumer(qint64 maxTicks);
 
 private:
     void checkGotoBar();

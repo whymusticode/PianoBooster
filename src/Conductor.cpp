@@ -955,7 +955,14 @@ void CConductor::realTimeEngine(qint64 mSecTicks)
     ticks = m_bar.addDeltaTime(ticks);
 
     if (seekingBarNumber())
-        ticks = m_bar.goToBarNumer();
+    {
+        // Only step up to the next pending MIDI event so that time signature changes are
+        // applied at the right moment and the bar count stays in step with the music.
+        qint64 maxTicks = 1;
+        if (m_nextMidiEvent.type() != MIDI_NONE)
+            maxTicks = qMax<qint64>(1, m_leadLagAdjust - m_playingDeltaTime);
+        ticks = m_bar.goToBarNumer(maxTicks);
+    }
 
     setEventBits( m_bar.readEventBits());
 

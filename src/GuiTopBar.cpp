@@ -243,6 +243,10 @@ void GuiTopBar::on_startBarSpin_valueChanged(double bar)
     stopMuiscPlaying();
 
     m_song->setPlayFromBar( bar);
+    // Rewind so the next Play seeks to the new start bar from the beginning; otherwise
+    // moving the start bar backwards would carry on from wherever playing stopped.
+    m_song->rewind();
+    m_atTheEndOfTheSong = false;
 }
 
 // Stop the muisc playing

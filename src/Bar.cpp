@@ -66,7 +66,7 @@ qint64 CBar::addDeltaTime(qint64 ticks)
     m_deltaTime +=ticks;
     if (ticks && m_enablePlayFromBar)
         checkGotoBar();
-    while (m_deltaTime > m_beatLength * SPEED_ADJUST_FACTOR)
+    while (m_deltaTime >= m_beatLength * SPEED_ADJUST_FACTOR)
     {
         m_deltaTime -= m_beatLength * SPEED_ADJUST_FACTOR;
         m_beatCounter++;
@@ -82,10 +82,17 @@ qint64 CBar::addDeltaTime(qint64 ticks)
     return ticks;
 }
 
-qint64 CBar::goToBarNumer()
+qint64 CBar::goToBarNumer(qint64 maxTicks)
 {
-    const auto ticks = static_cast<qint64>(
-        (m_playFromBar - getCurrentBarPos()) * static_cast<double>(m_beatLength) * SPEED_ADJUST_FACTOR + 1.0);
+    // Note: the distance must be converted to ticks in floating point. Truncating the
+    // bar distance to a whole number first makes the last (fractional) bar of the seek
+    // advance by a single tick per call, which makes seeking to a start bar crawl.
+    const double bars = m_playFromBar - getCurrentBarPos();
+    auto ticks = static_cast<qint64>(bars * static_cast<double>(m_barLength * SPEED_ADJUST_FACTOR)) + 1;
+    if (ticks > maxTicks)
+        ticks = maxTicks;
+    if (ticks < 1)
+        ticks = 1;
     addDeltaTime(ticks);
     return ticks;
 }
